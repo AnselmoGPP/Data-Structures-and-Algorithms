@@ -1,0 +1,4 @@
+#!/bin/bash
+#chmod -x filename
+
+vim ../src/main.cpp ../src/header.cpp ../headers/header.hpp
