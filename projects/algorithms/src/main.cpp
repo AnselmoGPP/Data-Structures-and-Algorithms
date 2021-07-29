@@ -26,9 +26,9 @@ bool test_arrayBasedList()
 	bool test = true;
 	int result[5] = { 4, 8, 5, 1, 2 };
 
-	arrayBasedList<int> l(5);
-	arrayBasedList<int> l2 = { 4, 2, 5, 1, 3 };
-	arrayBasedList<int> l3(l2);
+	ArrayBasedList<int> l(5);
+	ArrayBasedList<int> l2 = { 4, 2, 5, 1, 3 };
+	ArrayBasedList<int> l3(l2);
 	l = l3;
 	int n;
 
@@ -67,9 +67,9 @@ bool test_singlyLinkedList()
 	bool test = true;
 	int result[5] = { 4, 8, 5, 1, 2 };
 
-	singlyLinkedList<int> l;
-	singlyLinkedList<int> l2 = { 4, 2, 5, 1, 3 };
-	singlyLinkedList<int> l3(l2);
+	SinglyLinkedList<int> l;
+	SinglyLinkedList<int> l2 = { 4, 2, 5, 1, 3 };
+	SinglyLinkedList<int> l3(l2);
 	l = l3;
 	int n;
 
@@ -85,14 +85,16 @@ bool test_singlyLinkedList()
 	l.next();						// 4[5]1 2
 	l.insert(n);					// 4[8]5 1 2
 
+	for (size_t i = 0; i < l.length(); i++)
+		if (l[i] != result[i])
+			test = false;
+
 	for (l.moveToStart(); l.currPos() != l.length(); l.next())
 		if (l.getValue() != result[l.currPos()])
 			test = false;
-
+	
 	l.clear();
 	if (l.length() != 0) test = false;
-
-	node<int>::emptyFreelist();
 
 	outputResult(test, "singlyLinkedList");
 

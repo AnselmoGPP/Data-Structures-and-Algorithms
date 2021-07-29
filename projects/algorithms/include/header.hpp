@@ -2,42 +2,55 @@
 #define HEADER_HPP
 
 /*
-	myList:
-		arrayBasedList
-		singlyLinkedList
-		doubleLinkedList
+	Classes:
 
+		List
+			ArrayBasedList
+			SinglyLinkedList
+			DoubleLinkedList
 
-Empty number of elements currently stored
-Head: Beginn: When it contains no elements
-Length of the list: Ning of the list
-Tail: End of the list
-Sorted list: Its elements are positioned in ascending order of value
-Unsorted list: No particular relationship between element values and positions
+		Node
+			SNode
+			DNode
 
-insert/remove elements, read/modify element, create/clear list, access next/previous element...
+	Sorted list: Its elements are positioned in ascending order of value
+	Unsorted list: No particular relationship between element values and positions
+
+	Dynamic array: Array-based list that grows and shrink depending on the number of elements (example: std::vector), 
+	getting around the array-based list limitation. Disadvantage: dealing with space adjustments takes time. Each time 
+	the array grows in size, its contents must be copied. A good idea is to double the size of the array when it becomes 
+	full, and cut it in size when it becomes one quarter full.
+
+	Element implementations:
+	List users must decide whether they wish to store a copy or a reference of a given element on each list that contains it. 
+	Using references allow multiple list nodes to point to the same record rather than making copies. The disadvantage of using 
+	pointers is that they require space of its own (references do not).
+
+	Homogeneity: Usually, DSs store the same type, but could store different types.
+
 */
 
 #include <initializer_list>
 #include <stdexcept>
 
-namespace ans	// <<< Some members (append, get...) should use const
+namespace ans
 {
 
+	/// Abstract class: List.
 	template <typename T>
-	class list
+	class List
 	{
 	public:
 		typedef	T			value_type;
 		typedef	size_t		size_type;
 
-							list()										= default;
-							list(size_t size)							{ };
-							list(const std::initializer_list<T>& il)	{ };
-							list(const list& obj)						{ };				// Copy constructor
-		virtual				~list()										{ };
+							List()										= default;
+							List(size_t size)							{ };
+							List(const std::initializer_list<T>& il)	{ };
+							List(const List& obj)						{ };				// Copy constructor
+		virtual				~List()										{ };
 
-		virtual	list&		operator=(const list& obj)					{ return *this; };	// Copy-assignment operator
+		//virtual list&		operator=(const list& obj)					{ return *this; };	// Copy-assignment operator
 		//virtual T&		operator[](size_t i) const					= 0;				// Subscript operator
 
 		virtual	void		clear()										= 0;
@@ -57,11 +70,9 @@ namespace ans	// <<< Some members (append, get...) should use const
 	};
 
 
-	/**
-	* Array based list class. It stores a dynamic number of elements ("listSize") of type T in an internal array of capacity "maxSize".  
-	*/
+	/// Array-based list class. It stores a dynamic number of elements ("listSize") of type T in an internal array of capacity "maxSize".  
 	template <typename T>
-	class arrayBasedList : public list<T>	// <<< override keyword
+	class ArrayBasedList : public List<T>
 	{
 		T*				listArray;
 		size_t			maxSize;	// x
@@ -69,126 +80,129 @@ namespace ans	// <<< Some members (append, get...) should use const
 		size_t			curr;		// Range: [0, n] (not n-1)
 
 	public:
-						arrayBasedList(size_t size = 100);
-						arrayBasedList(const std::initializer_list<T>& il);
-						arrayBasedList(const arrayBasedList& obj);
-						~arrayBasedList();
-		arrayBasedList&	operator=(const arrayBasedList& obj);
-		T&				operator[](size_t i) const;	// Bonus method
+						ArrayBasedList(size_t size = 100);
+						ArrayBasedList(const std::initializer_list<T>& il);	// O(n)
+						ArrayBasedList(const ArrayBasedList& obj);			// O(n)
+						~ArrayBasedList()						override;
 
-		void			clear();
-		void			insert(const T& item)								= override;//<<< add override
-		void			append(const T& item);
-		const T			remove();
+		ArrayBasedList&	operator=(const ArrayBasedList& obj);				// O(n)
+		T&				operator[](size_t i) const;							// O(n)
 
-		size_t			length() const;
-		size_t			currPos() const;
-		const T&		getValue() const;
+		void			clear()									override;
+		void			insert(const T& item)					override;	// O(n)
+		void			append(const T& item)					override;
+		const T			remove()								override;	// O(n)
 
-		void			moveToStart();
-		void			moveToEnd();
-		void			moveToPos(size_t pos);
-		void			prev();
-		void			next();
+		size_t			length() const							override;
+		size_t			currPos() const							override;
+		const T&		getValue() const						override;
+
+		void			moveToStart()							override;
+		void			moveToEnd()								override;
+		void			moveToPos(size_t pos)					override;
+		void			prev()									override;
+		void			next()									override;
 	};
 
 	template <typename T>
-	size_t find(arrayBasedList<T>& list, const T& item);
+	size_t find(ArrayBasedList<T>& list, const T& item);
 
 
-	/*
-		Freelist: Stores deleted nodes for future use. Used to avoid calling "new" too much for creating new nodes.
-	*/
+	/// Abstract class: Node
 	template <typename T>
-	class node
+	class Node
 	{
-		T					content;
-		node*				next;
-		static node*		freelist;	// <<< How to delete?
+	protected:
+		T					content;	// Item
+
+	public:
+		Node() { };
+		Node(T content) : content(content) { };
+	};
+
+	/// Node type for a singly linked list. Contains an item (content) of type T and a pointer to the next node (next). 
+	template <typename T>
+	class SNode : public Node<T>
+	{
+		SNode*				next;		// Next node
+		
+		static SNode*		freelist;
+		static size_t		nodesCount;
+		void				clearFreelist();
 
 	public:
 		typedef				T		value_type;
 		typedef				size_t	size_type;
 
-							node(const T &content, node *nextNode = nullptr);
-							node(node* nextNode = nullptr);
-							node(const node &obj);
-							~node();
-		node&				operator=(const node& obj);
+							SNode(const T &content, SNode *nextNode = nullptr);
+							SNode(SNode* nextNode = nullptr);
+							SNode(const SNode &obj);
+							~SNode();
+		SNode&				operator=(const SNode& obj);
 
-		node*				getNext();
-		node*				setNext(node *nextNode);
+		SNode*				getNext();
+		SNode*				setNext(SNode *nextNode);
 		const T&			getContent();
 		const T&			setContent(const T &content);
 
-		static node*		get(const T &content, node *nextNode);	// <<<
-		void				release();								// <<<
-
-		// Bonus methods
-		static void			emptyFreelist();
-		static node*&		getFreelist();
+		static SNode*		get(const T &content, SNode *nextNode);
+		void				release();
+		void				release(SNode* tail);
 	};
 
-
-	/**
-		Header node: Additional first node whose value is ignored. I helps with special cases (empty list, inserting at head...).
-		This data structure stores a set of linked nodes, each one containing some item of type T (content).
-	*/
+	/// Node type for a double linked list. Contains an item (content) of type T and two pointers: next node (next) and previous node (prev). 
 	template <typename T>
-	class singlyLinkedList : public list<T>
+	class DNode : public Node<T>
 	{
-		node<T>*			head;		// header node
-		node<T>*			tail;
-		size_t				count;
+	public:
+	};
+
+	/// Singly linked class that stores a set of linked nodes, each one containing some item of type T (content).
+	template <typename T>
+	class SinglyLinkedList : public List<T>
+	{
+		SNode<T>*			head;		// Header node: Additional first node whose value is ignored. Every linked list always has one. It helps with special cases.
+		SNode<T>*			tail;		// Last node
+		size_t				count;		// Number of nodes
 
 	protected:
-		node<T>*			curr;		// Node preceding the current node
+		SNode<T>*			curr;		// Node preceding the current node (used for selecting a node).
 
 	public:
-							singlyLinkedList(size_t size = 0);
-							singlyLinkedList(const std::initializer_list<T>& il);
-							singlyLinkedList(const singlyLinkedList& obj);
-							~singlyLinkedList();
-		singlyLinkedList&	operator=(const singlyLinkedList& obj);
-		//T&				operator[](size_t i) const;	// <<< Doesn't work because getContent() returns a const T&  <<< should I implement node<T> as T
+							SinglyLinkedList(size_t size = 0);
+							SinglyLinkedList(const std::initializer_list<T>& il);		// O(n)
+							SinglyLinkedList(const SinglyLinkedList& obj);				// O(n)
+							~SinglyLinkedList()								override;	// O(n)
 
-		void				clear();					// <<< check complexity of all methods in this header file
-		void				insert(const T& content);
-		void				append(const T& content);
-		const T				remove();
+		SinglyLinkedList&	operator=(const SinglyLinkedList& obj);						// O(n)
+		const T&			operator[](size_t i) const;									// O(n)
 
-		size_t				length() const;
-		size_t				currPos() const;
-		const T&			getValue() const;
+		void				clear()											override;
+		void				insert(const T& content)						override;
+		void				append(const T& content)						override;
+		const T				remove()										override;
 
-		void				moveToStart();
-		void				moveToEnd();
-		void				moveToPos(size_t pos);
-		void				prev();
-		void				next();
+		size_t				length() const									override;
+		size_t				currPos() const									override;	// O(n)
+		const T&			getValue() const								override;
+
+		void				moveToStart()									override;
+		void				moveToEnd()										override;
+		void				moveToPos(size_t pos)							override;	// O(n)
+		void				prev()											override;	// O(n)
+		void				next()											override;
 	};
 
 
 	// ---------- arrayBasedList ------------------------------
 
-	/// O(n) External function. If item is found, returns its position. Otherwise, returns array size.
-	template <typename T>
-	size_t find(arrayBasedList<T>& list, const T& item)
-	{
-		for (list.moveToStart(); list.currPos() < list.length(); list.next())
-			if (item == list.getValue())
-				return list.currPos();
-
-		return list.currPos();
-	}
-
 	/// O(1) Constructor. Allocate memory for a number of elements.
 	template <typename T>
-	arrayBasedList<T>::arrayBasedList(size_t size) : maxSize(size), listSize(0), curr(0) { listArray = new T[size]; }
+	ArrayBasedList<T>::ArrayBasedList(size_t size) : maxSize(size), listSize(0), curr(0) { listArray = new T[size]; }
 
 	/// O(n) Constructor. Allocate memory for the elements in the initializer list and copy them into our list.
 	template <typename T>
-	arrayBasedList<T>::arrayBasedList(const std::initializer_list<T>& il) : maxSize(il.size()), listSize(il.size()), curr(0)
+	ArrayBasedList<T>::ArrayBasedList(const std::initializer_list<T>& il) : maxSize(il.size()), listSize(il.size()), curr(0)
 	{
 		listArray = new T[il.size()];
 
@@ -197,13 +211,9 @@ namespace ans	// <<< Some members (append, get...) should use const
 			listArray[i] = item[i];
 	}
 
-	/// O(1) Constructor. Delete the memory allocated by the constructor for this list. 
-	template <typename T>
-	arrayBasedList<T>::~arrayBasedList() { delete[] listArray; }
-
 	/// O(n) Copy constructor.
 	template <typename T>
-	arrayBasedList<T>::arrayBasedList(const arrayBasedList& obj)
+	ArrayBasedList<T>::ArrayBasedList(const ArrayBasedList& obj)
 	{
 		maxSize = obj.maxSize;
 		listSize = obj.listSize;
@@ -214,9 +224,13 @@ namespace ans	// <<< Some members (append, get...) should use const
 			listArray[i] = obj.listArray[i];
 	}
 
+	/// O(1) Destructor. Delete the memory allocated by the constructor for this list. 
+	template <typename T>
+	ArrayBasedList<T>::~ArrayBasedList() { delete[] listArray; }
+
 	/// O(n) Copy-assignment operator overloading.
 	template <typename T>
-	arrayBasedList<T>& arrayBasedList<T>::operator=(const arrayBasedList& obj)
+	ArrayBasedList<T>& ArrayBasedList<T>::operator=(const ArrayBasedList& obj)
 	{
 		maxSize = obj.maxSize;
 		listSize = obj.listSize;
@@ -232,7 +246,7 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Subscript operator overloading.
 	template <typename T>
-	T& arrayBasedList<T>::operator[](size_t i) const
+	T& ArrayBasedList<T>::operator[](size_t i) const
 	{
 		if (i >= listSize)
 			throw std::out_of_range("Subscript out of range");
@@ -242,11 +256,11 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Set listSize to 0 (maxSize remains the same).
 	template <typename T>
-	void arrayBasedList<T>::clear() { listSize = curr = 0; }
+	void ArrayBasedList<T>::clear() { listSize = curr = 0; }
 
 	/// O(n) Store a new element in the list at the current position.
 	template <typename T>
-	void arrayBasedList<T>::insert(const T& item)
+	void ArrayBasedList<T>::insert(const T& item)
 	{
 		if (listSize == maxSize)
 			throw std::out_of_range("List capacity exceeded");
@@ -260,7 +274,7 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Store a new element at the end of the list (listSize).
 	template <typename T>
-	void arrayBasedList<T>::append(const T& item)
+	void ArrayBasedList<T>::append(const T& item)
 	{
 		if (listSize == maxSize)
 			throw std::out_of_range("List capacity exceeded");
@@ -270,7 +284,7 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(n) Remove the current element from the list.
 	template <typename T>
-	const T arrayBasedList<T>::remove()
+	const T ArrayBasedList<T>::remove()
 	{
 		if (curr >= maxSize)
 			throw std::out_of_range("No current element");
@@ -286,15 +300,15 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Move curr to the first element.
 	template <typename T>
-	void arrayBasedList<T>::moveToStart() { curr = 0; }
+	void ArrayBasedList<T>::moveToStart() { curr = 0; }
 
 	/// O(1) Move curr to element one-past-the-end.
 	template <typename T>
-	void arrayBasedList<T>::moveToEnd() { curr = listSize; }
+	void ArrayBasedList<T>::moveToEnd() { curr = listSize; }
 
 	/// O(1) Move curr to any position from 0 to one-past-the-end.
 	template <typename T>
-	void arrayBasedList<T>::moveToPos(size_t pos)
+	void ArrayBasedList<T>::moveToPos(size_t pos)
 	{
 		if (pos > listSize)
 			throw std::out_of_range("Pos out of range");
@@ -304,23 +318,23 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Move curr to the previous element, except when curr==0.
 	template <typename T>
-	void arrayBasedList<T>::prev() { if (curr != 0) curr--; }
+	void ArrayBasedList<T>::prev() { if (curr != 0) curr--; }
 
 	/// O(1) Move curr to the next element, it it exists (including one-past-the-end).
 	template <typename T>
-	void arrayBasedList<T>::next() { if (curr < listSize) curr++; }
+	void ArrayBasedList<T>::next() { if (curr < listSize) curr++; }
 
 	/// O(1) Get the number of elements in the list.
 	template <typename T>
-	size_t arrayBasedList<T>::length() const { return listSize; }
+	size_t ArrayBasedList<T>::length() const { return listSize; }
 
 	/// O(1) Get the position number of the current element.
 	template <typename T>
-	size_t arrayBasedList<T>::currPos() const { return curr; }
+	size_t ArrayBasedList<T>::currPos() const { return curr; }
 
 	/// O(1) Get the element stored in the current position.
 	template <typename T>
-	const T& arrayBasedList<T>::getValue() const
+	const T& ArrayBasedList<T>::getValue() const
 	{
 		if (curr >= listSize)
 			throw std::out_of_range("No current element");
@@ -328,106 +342,82 @@ namespace ans	// <<< Some members (append, get...) should use const
 		return listArray[curr];
 	}
 
+	/// O(n) External template function. If item is found, returns its position. Otherwise, returns array size.
+	template <typename T>
+	size_t find(ArrayBasedList<T>& list, const T& item)
+	{
+		for (list.moveToStart(); list.currPos() < list.length(); list.next())
+			if (item == list.getValue())
+				return list.currPos();
+
+		return list.currPos();
+	}
+
 
 	// ---------- node ------------------------------
 
+	/// Static list for storing removed nodes (already created nodes that aren't being used). Used to avoid calling "new" too much for creating new nodes.
 	template <typename T>
-	node<T>* node<T>::freelist = nullptr;
+	SNode<T>* SNode<T>::freelist = nullptr;
 
+	/// Number of existing singlyLinkedList<T> objects. When it reaches 0, the content in node<T>::freelist is deleted by calling .
 	template <typename T>
-	node<T>::node(const T &content, node *nextNode) : content(content), next(nextNode)
+	size_t SNode<T>::nodesCount = 0;
+
+	/// Constructor. Specify the item (content) and next node.
+	template <typename T>
+	SNode<T>::SNode(const T& content, SNode* nextNode) : Node(content), next(nextNode) { nodesCount++; }
+
+	/// Constructor. Specify next node.
+	template <typename T>
+	SNode<T>::SNode(SNode* nextNode) : next(nextNode) { nodesCount++; }
+
+	/// Copy constructor. Be careful: The pointer to next node is copied (multiple pointers pointing to the same node may have problems when such node is destroyed).
+	template <typename T>
+	SNode<T>::SNode(const SNode& obj) : Node(obj.content), next(obj.nextNode) { nodesCount++; }
+
+	/// Destructor. Destroys the next node (which causes the destruction of subsequent nodes).
+	template <typename T>
+	SNode<T>::~SNode() 
 	{ 
-		/*
-		if (nextNode == nullptr) next = nullptr;
-		else 
-		{
-			next  = new node;
-			*next = *nextNode;	// <<< new constructs / freellist initialization / const 
-		}
-		*/
+		if (--nodesCount == 0)	clearFreelist();
+		if (next != nullptr)	delete next; 
 	}
 
-	template <typename T>	// <<< content not assigned
-	node<T>::node(node* nextNode) : next(nextNode)
-	{
-		/*
-		if (nextNode == nullptr) next = nullptr;
-		else
-		{
-			next = new node;
-			*next = *nextNode;
-		}
-		*/
-	}
-
+	/// Copy-assignment operator overloading.
 	template <typename T>
-	node<T>::~node() { if(next != nullptr) delete next; }
-
-	template <typename T>
-	node<T>::node(const node &obj) : content(obj.content), next(obj.nextNode)
-	{
-		/*
-		if (obj.next == nullptr) next = nullptr;
-		else
-		{
-			next = new node;
-			*next = *obj.nextNode;
-		}
-		*/
-	}
-
-	template <typename T>
-	node<T>& node<T>::operator=(const node &obj)
+	SNode<T>& SNode<T>::operator=(const SNode &obj)
 	{
 		content = obj.content;
 		next	= obj.next;
-		/*
-		content = obj.content;
 
-		if (next != nullptr)	 delete next;
-		if (obj.next == nullptr) next = nullptr;
-		else {
-			 next = new node;
-			*next = *(obj.next);
-		}
-		*/
 		return *this;
 	}
 
+	/// Get the pointer to the next node.
 	template <typename T>
-	node<T>* node<T>::getNext() { return next; }
+	SNode<T>* SNode<T>::getNext() { return next; }
 
+	/// Set the pointer to the next node.
 	template <typename T>
-	node<T>* node<T>::setNext(node *nextNode) 
-	{ 	
-		return next = nextNode;
-		/*
-		if (next != nullptr)	 delete next;
-		if (nextNode == nullptr) return next = nullptr;
-		else {
-			//new(next) node; <<<
-			next = new node;
-			*next = *nextNode;
-			return next;
-			//return &(*next = *nextNode);
-		}
-		*/
-	}
+	SNode<T>* SNode<T>::setNext(SNode *nextNode) { return next = nextNode; }
 
+	/// Get the item (content) that this node contains.
 	template <typename T>
-	const T& node<T>::getContent() { return content; }
+	const T& SNode<T>::getContent() { return content; }
 
+	/// Set the item (content) that this node contains.
 	template <typename T>
-	const T& node<T>::setContent(const T& content) { return this->content = content; }
+	const T& SNode<T>::setContent(const T& content) { return this->content = content; }
 
-	/// Allocate memory and create a new node. Returns a pointer to that memory. Remember to delete (deallocate) it when it's no longer needed.
+	/// Allocate memory for a node (or take one node's address from freelist, if available), configure the new node, and return a pointer to it.
 	template <typename T>
-	node<T>* node<T>::get(const T &content, node *nextNode)
+	SNode<T>* SNode<T>::get(const T &content, SNode *nextNode)
 	{
 		if (freelist == nullptr)
-			return new node(content, nextNode);
+			return new SNode(content, nextNode);
 
-		node* newNode	= freelist;
+		SNode* newNode	= freelist;
 		freelist		= freelist->getNext();
 		newNode->setContent(content);
 		newNode->setNext(nextNode);
@@ -436,49 +426,44 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// Save this node in the freelist (head)
 	template <typename T>
-	void node<T>::release()
+	void SNode<T>::release()
 	{
-		//content = null;
-		next = freelist;
+		next		= freelist;
+		freelist	= this;
+	}
+
+	/// Move all nodes between this and tail (inclusive) to the freelist. Required in singlyLinkedList::clear() for getting O(1) performance.
+	template <typename T>
+	void SNode<T>::release(SNode* tail)
+	{
+		tail->setNext(freelist);
 		freelist = this;
 	}
 
-	/// Delete (deallocate) all nodes in the freelist (maybe when no linked lists exist or no nodes an in use) 	// <<< USAR
+	/// Delete (deallocate) all nodes in the freelist. Automatically called when nodesCount==0 (no nodes<T> in existence, which implies that it's called when no linked lists exist because each one has a header node).
 	template <typename T>
-	void node<T>::emptyFreelist()
+	void SNode<T>::clearFreelist()
 	{
 		delete freelist;
 		freelist = nullptr;
-		/*
-		while (freelist != nullptr)
-		{
-			node<T>* nod = freelist;
-			freelist = freelist->getNext();
-			delete nod;
-		}
-		*/
 	}
-
-	/// Get a reference to the freelist. Required in singlyLinkedList<T>::clear() for getting O(1) performance.
-	template <typename T>
-	node<T>*& node<T>::getFreelist() { return freelist; }
 
 
 	// ---------- singlyLinkedList ------------------------------
 
 	/// O(1) Constructor. The parameter "size" is ignored.
 	template <typename T>
-	singlyLinkedList<T>::singlyLinkedList(size_t size) 
+	SinglyLinkedList<T>::SinglyLinkedList(size_t size) 
 	{ 
-		curr = head = tail = new node<T>(nullptr);
+		curr = head = tail = new SNode<T>(nullptr);	// header node
 		count = 0;	
 	}
 
 	/// O(n) Constructor. It takes an initialization list.
 	template <typename T>
-	singlyLinkedList<T>::singlyLinkedList(const std::initializer_list<T>& il)
+	SinglyLinkedList<T>::SinglyLinkedList(const std::initializer_list<T>& il)
 	{
-		curr = head = tail = new node<T>(nullptr);
+		curr = head = tail = new SNode<T>(nullptr);	// header node
 		count = 0;
 
 		const T* item = il.begin();
@@ -488,56 +473,58 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(n) Copy constructor.
 	template <typename T>
-	singlyLinkedList<T>::singlyLinkedList(const singlyLinkedList& obj)
+	SinglyLinkedList<T>::SinglyLinkedList(const SinglyLinkedList& obj)
 	{
-		curr = head = tail = new node<T>(nullptr);
+		curr = head = tail = new SNode<T>(nullptr);	// header node
 		count = 0;
 
-		for (node<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
+		for (SNode<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
 			append(pos->getNext()->getContent());
 	}
 
-	/// O(n) Delete all nodes in the list, including header node.
+	/// O(n) Destructor. Delete all nodes in the list, including header node.
 	template <typename T>
-	singlyLinkedList<T>::~singlyLinkedList() 
-	{ 
-		delete head;
-	}	// <<< see clear() too
+	SinglyLinkedList<T>::~SinglyLinkedList() { delete head;	}
 
 	/// O(n) Copy-assignment operator overloading.
 	template <typename T>
-	singlyLinkedList<T>& singlyLinkedList<T>::operator=(const singlyLinkedList& obj)
+	SinglyLinkedList<T>& SinglyLinkedList<T>::operator=(const SinglyLinkedList& obj)
 	{
 		clear();
 
-		for (node<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
+		for (SNode<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
 			append(pos->getNext()->getContent());
 
 		return *this;
 	}
-/*
-	/// O(n) Subscript operator overloading.
+
+	/// O(n) Subscript operator overloading. It returns "const T&" instead of "T&" because node<T>::getContent() returns "const T&". The current node is not changed.
 	template <typename T>
-	T& singlyLinkedList<T>::operator[](size_t i) const
+	const T& SinglyLinkedList<T>::operator[](size_t i) const
 	{
-		node<T>* originalCurr	= curr;
-		moveToPos(i);
-		const T& result			= *(curr->getNext()->getContent());
-		curr					= originalCurr;
-		return result;
+		if (i >= count)
+			throw std::out_of_range("No current element");
+
+		SNode<T>* nod = head;
+		size_t pos = 0;
+		while (pos != i) 
+		{ 
+			nod = nod->getNext();
+			pos++;
+		}
+
+		return nod->getNext()->getContent();
 	}
-*/
+
 	/// O(1) Move all nodes in the list to the freelist, except header node.
 	template <typename T>
-	void singlyLinkedList<T>::clear()
+	void SinglyLinkedList<T>::clear()
 	{
-		//delete head->getNext();					// O(n) Delete all items in the linked list, except header node.
+		//delete head->getNext();						// O(n) Delete all items in the linked list, except header node.
 
-		//moveToStart();
-		//while (curr != tail) remove();			// O(n) Move all nodes to the freelist, except header node.
+		//moveToStart(); while(curr != tail) remove();	// O(n) Move all nodes to the freelist, except header node.
 
-		tail->setNext(node<T>::getFreelist());		// O(1) Move all nodes to the freelist, except header node.
-		node<T>::getFreelist() = head->getNext();
+		head->getNext()->release(tail);					// O(1) Move all nodes to the freelist, except header node.
 
 		head->setNext(nullptr);
 		curr = tail = head;
@@ -546,30 +533,30 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Store a new node in the list at the current position.
 	template <typename T>
-	void singlyLinkedList<T>::insert(const T &content)
+	void SinglyLinkedList<T>::insert(const T &content)
 	{
-		curr->setNext(node<T>::get(content, curr->getNext()));	// New node inserted after curr (to insert in the head, we use header node)
+		curr->setNext(SNode<T>::get(content, curr->getNext()));	// New node inserted after curr (to insert in the head, we use header node)
 		if (tail == curr) tail = curr->getNext();				// In case we inserted in the tail
 		count++;
 	}
 	
 	/// O(1) Store a new node at the end of the list (tail).
 	template <typename T>
-	void singlyLinkedList<T>::append(const T& content)
+	void SinglyLinkedList<T>::append(const T& content)
 	{
-		tail = tail->setNext(node<T>::get(content, nullptr));
+		tail = tail->setNext(SNode<T>::get(content, nullptr));
 		count++;
 	}
 
 	/// O(1) Remove the current node from the list and save it in the freelist.
 	template <typename T>
-	const T singlyLinkedList<T>::remove()
+	const T SinglyLinkedList<T>::remove()
 	{	
 		if (tail == curr)				throw std::out_of_range("No current element");	// If the item to remove is one-past-the-end
 		if (tail == curr->getNext())	tail = curr;									// If the object to remove is the tail
 			
 		T tempContent		= curr->getNext()->getContent();
-		node<T>* tempNode	= curr->getNext();
+		SNode<T>* tempNode	= curr->getNext();
 
 		curr->setNext(curr->getNext()->getNext());
 		tempNode->release();
@@ -579,13 +566,13 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Get the number of nodes in the list.
 	template <typename T>
-	size_t singlyLinkedList<T>::length() const { return count; }
+	size_t SinglyLinkedList<T>::length() const { return count; }
 
 	/// O(n) Get the position number of the current node.
 	template <typename T>
-	size_t singlyLinkedList<T>::currPos() const
+	size_t SinglyLinkedList<T>::currPos() const
 	{
-		node<T> *temp = head;
+		SNode<T> *temp = head;
 		size_t i;
 
 		for (i = 0; curr != temp; i++) 
@@ -596,7 +583,7 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Get the item stored in the current node.
 	template <typename T>
-	const T& singlyLinkedList<T>::getValue() const
+	const T& SinglyLinkedList<T>::getValue() const
 	{
 		if (curr == tail)
 			throw std::out_of_range("No current element");
@@ -606,15 +593,15 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(1) Move curr to the header node.
 	template <typename T>
-	void singlyLinkedList<T>::moveToStart() { curr = head; }
+	void SinglyLinkedList<T>::moveToStart() { curr = head; }
 
 	/// O(1) Move curr to the tail (node one-past-the-end).
 	template <typename T>
-	void singlyLinkedList<T>::moveToEnd() { curr = tail; }
+	void SinglyLinkedList<T>::moveToEnd() { curr = tail; }
 
 	/// O(n) Move curr to any position from 0 to one-past-the-end.
 	template <typename T>
-	void singlyLinkedList<T>::moveToPos(size_t pos)
+	void SinglyLinkedList<T>::moveToPos(size_t pos)
 	{
 		if (pos > count)
 			throw std::out_of_range("No current element");
@@ -626,18 +613,18 @@ namespace ans	// <<< Some members (append, get...) should use const
 
 	/// O(n) Move curr to the previous node, except when curr==head.
 	template <typename T>
-	void singlyLinkedList<T>::prev()
+	void SinglyLinkedList<T>::prev()
 	{
 		if (curr == head) return;
 
-		node<T> *temp = head;
+		SNode<T> *temp = head;
 		while (temp->getNext() != curr) temp = temp->getNext();
 		curr = temp;
 	}
 
 	/// O(1) Move curr to the next node, if it exists (including one-past-the-end).
 	template <typename T>
-	void singlyLinkedList<T>::next() { if (curr != tail) curr = curr->getNext(); }
+	void SinglyLinkedList<T>::next() { if (curr != tail) curr = curr->getNext(); }
 	
 
 	// ---------- doubleLinkedList ------------------------------
