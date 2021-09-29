@@ -50,7 +50,7 @@ namespace ans
 							List(const List& obj)						{ };				// Copy constructor
 		virtual				~List()										{ };
 
-		//virtual list&		operator=(const list& obj)					{ return *this; };	// Copy-assignment operator
+		//virtual List&		operator=(const List& obj)					{ return *this; };	// Copy-assignment operator
 		//virtual T&		operator[](size_t i) const					= 0;				// Subscript operator
 
 		virtual	void		clear()										= 0;
@@ -108,56 +108,84 @@ namespace ans
 	size_t find(ArrayBasedList<T>& list, const T& item);
 
 
-	/// Abstract class: Node
-	template <typename T>
+	/// Base class: Node. It stores the item (content) and the methods to retrieve it and modify it.
+	template <typename T>// <<< add type N<T> will avoid repeated methods?
 	class Node
 	{
 	protected:
-		T					content;	// Item
+		T			content;	// Item
 
 	public:
-		Node() { };
-		Node(T content) : content(content) { };
+		typedef		T		value_type;
+		typedef		size_t	size_type;
+
+					Node();
+					Node(T content);
+					Node(const Node& obj);
+		virtual		~Node();
+
+		Node&		operator=(const Node& obj) const;
+
+		const T&	getContent() const;
+		const T&	setContent(const T& content);
 	};
 
 	/// Node type for a singly linked list. Contains an item (content) of type T and a pointer to the next node (next). 
 	template <typename T>
 	class SNode : public Node<T>
 	{
-		SNode*				next;		// Next node
+		SNode*			next;		// Next node
 		
-		static SNode*		freelist;
-		static size_t		nodesCount;
-		void				clearFreelist();
+		static SNode*	freelist;
+		static size_t	activeNodes;
+		void			clearFreelist() const;
 
 	public:
-		typedef				T		value_type;
-		typedef				size_t	size_type;
+						SNode(const T &content, SNode *nextNode);
+						SNode(SNode* nextNode);
+						SNode(const SNode &obj);
+						~SNode();
 
-							SNode(const T &content, SNode *nextNode = nullptr);
-							SNode(SNode* nextNode = nullptr);
-							SNode(const SNode &obj);
-							~SNode();
-		SNode&				operator=(const SNode& obj);
+		SNode&			operator=(const SNode& obj) const;
 
-		SNode*				getNext();
-		SNode*				setNext(SNode *nextNode);
-		const T&			getContent();
-		const T&			setContent(const T &content);
+		SNode*			getNext() const;
+		SNode*			setNext(SNode *nextNode);
 
-		static SNode*		get(const T &content, SNode *nextNode);
-		void				release();
-		void				release(SNode* tail);
+		static SNode*	get(const T &content, SNode *nextNode);
+		void			release();
+		void			release(SNode* tail, size_t size);
 	};
 
 	/// Node type for a double linked list. Contains an item (content) of type T and two pointers: next node (next) and previous node (prev). 
 	template <typename T>
 	class DNode : public Node<T>
 	{
+		DNode*			next;		// Next node
+		DNode*			prev;		// Previous node
+
+		static DNode*	freelist;
+		static size_t	activeNodes;
+		void			clearFreelist() const;
+
 	public:
+						DNode(const T& content, DNode* prevNode, DNode* nextNode);
+						DNode(DNode* prevNode, DNode* nextNode);
+						DNode(const DNode& obj);
+						~DNode();
+		
+		DNode&			operator=(const DNode& obj) const;
+
+		DNode*			getPrev() const;
+		DNode*			setPrev(DNode* prevNode);
+		DNode*			getNext() const;
+		DNode*			setNext(DNode* nextNode);
+
+		static DNode*	get(const T& content, DNode* prevNode, DNode* nextNode);
+		void			release();
+		void			release(DNode* tail, size_t size);
 	};
 
-	/// Singly linked class that stores a set of linked nodes, each one containing some item of type T (content).
+	/// Singly linked list class that stores a set of linked nodes, each one containing some item of type T (content).
 	template <typename T>
 	class SinglyLinkedList : public List<T>
 	{
@@ -167,7 +195,7 @@ namespace ans
 
 	protected:
 		SNode<T>*			curr;		// Node preceding the current node (used for selecting a node).
-
+	
 	public:
 							SinglyLinkedList(size_t size = 0);
 							SinglyLinkedList(const std::initializer_list<T>& il);		// O(n)
@@ -193,8 +221,49 @@ namespace ans
 		void				next()											override;
 	};
 
+	template<typename T>
+	using SLL = SinglyLinkedList<T>;
 
-	// ---------- arrayBasedList ------------------------------
+	/// Double linked list class that stores a set of linked nodes, each one containing some item of type T (content).
+	template <typename T>
+	class DoubleLinkedList : public List<T>
+	{
+		DNode<T>* head;		// Header node: Additional first node whose value is ignored. Every linked list always has one. It helps with special cases.
+		DNode<T>* tail;		// Tailer node: Additional last node whose value is ignored. Every double linked list always has one. It helps with special cases. It is one-past-one-past-the-end.
+		size_t	count;		// Number of nodes
+
+	protected:
+		DNode<T>* curr;		// Node preceding (for consistency) the current node (used for selecting a node).
+
+	public:
+							DoubleLinkedList(size_t size = 0);
+							DoubleLinkedList(const std::initializer_list<T>& il);		// O(n)
+							DoubleLinkedList(const DoubleLinkedList& obj);				// O(n)
+							~DoubleLinkedList()								override;	// O(n)
+
+		DoubleLinkedList&	operator=(const DoubleLinkedList& obj);						// O(n)
+		const T&			operator[](size_t i) const;									// O(n)
+
+		void				clear()											override;
+		void				insert(const T& content)						override;
+		void				append(const T& content)						override;
+		const T				remove()										override;
+
+		size_t				length() const									override;
+		size_t				currPos() const									override;	// O(n)
+		const T&			getValue() const								override;
+
+		void				moveToStart()									override;
+		void				moveToEnd()										override;
+		void				moveToPos(size_t pos)							override;	// O(n)
+		void				prev()											override;	// O(n)
+		void				next()											override;
+	};
+
+	template<typename T>
+	using DLL = DoubleLinkedList<T>;
+
+	// ---------- ArrayBasedList ------------------------------
 
 	/// O(1) Constructor. Allocate memory for a number of elements.
 	template <typename T>
@@ -232,14 +301,17 @@ namespace ans
 	template <typename T>
 	ArrayBasedList<T>& ArrayBasedList<T>::operator=(const ArrayBasedList& obj)
 	{
-		maxSize = obj.maxSize;
-		listSize = obj.listSize;
-		curr = obj.curr;
+		if (this != &obj)
+		{
+			maxSize = obj.maxSize;
+			listSize = obj.listSize;
+			curr = obj.curr;
 
-		delete[] listArray;
-		listArray = new T[maxSize];
-		for (size_t i = 0; i < maxSize; i++)
-			listArray[i] = obj.listArray[i];
+			delete[] listArray;
+			listArray = new T[maxSize];
+			for (size_t i = 0; i < maxSize; i++)
+				listArray[i] = obj.listArray[i];
+		}
 
 		return *this;
 	}
@@ -354,66 +426,94 @@ namespace ans
 	}
 
 
-	// ---------- node ------------------------------
+	// ---------- Node ------------------------------
+
+	template <typename T>
+	Node<T>::Node() { };
+
+	template <typename T>
+	Node<T>::Node(T content) : content(content) { };
+
+	template <typename T>
+	Node<T>::Node(const Node& obj) : content(obj.content) { };
+
+	template <typename T>
+	Node<T>::~Node() { };
+
+	template <typename T>
+	Node<T>& Node<T>::operator=(const Node& obj) const 
+	{ 
+		if (this != &obj) 
+			content = obj.content; 
+
+		return *this; 
+	};
+
+	/// Get the item (content) that this node contains.
+	template <typename T>
+	const T& Node<T>::getContent() const { return content; }
+
+	/// Set the item (content) that this node contains.
+	template <typename T>
+	const T& Node<T>::setContent(const T& content) { return this->content = content; }
+
+	// ---------- SNode ------------------------------
 
 	/// Static list for storing removed nodes (already created nodes that aren't being used). Used to avoid calling "new" too much for creating new nodes.
 	template <typename T>
 	SNode<T>* SNode<T>::freelist = nullptr;
 
-	/// Number of existing singlyLinkedList<T> objects. When it reaches 0, the content in node<T>::freelist is deleted by calling .
+	/// Number of SNode objects that aren't in the freelist. When it reaches 0, the content in freelist is deleted by calling clearFreelist().
 	template <typename T>
-	size_t SNode<T>::nodesCount = 0;
+	size_t SNode<T>::activeNodes = 0;
 
 	/// Constructor. Specify the item (content) and next node.
 	template <typename T>
-	SNode<T>::SNode(const T& content, SNode* nextNode) : Node(content), next(nextNode) { nodesCount++; }
+	SNode<T>::SNode(const T& content, SNode* nextNode) : Node(content), next(nextNode) { activeNodes++; }
 
 	/// Constructor. Specify next node.
 	template <typename T>
-	SNode<T>::SNode(SNode* nextNode) : next(nextNode) { nodesCount++; }
+	SNode<T>::SNode(SNode* nextNode) : next(nextNode) { activeNodes++; }
 
-	/// Copy constructor. Be careful: The pointer to next node is copied (multiple pointers pointing to the same node may have problems when such node is destroyed).
+	/// Copy constructor. Be careful: The pointer to next node is copied (multiple pointers pointing to the same node may cause problems when such node is destroyed).
 	template <typename T>
-	SNode<T>::SNode(const SNode& obj) : Node(obj.content), next(obj.nextNode) { nodesCount++; }
+	SNode<T>::SNode(const SNode& obj) : Node(obj.content), next(obj.next) { activeNodes++; }
 
 	/// Destructor. Destroys the next node (which causes the destruction of subsequent nodes).
 	template <typename T>
 	SNode<T>::~SNode() 
 	{ 
-		if (--nodesCount == 0)	clearFreelist();
+		if (--activeNodes == 0)	clearFreelist();
 		if (next != nullptr)	delete next; 
 	}
 
 	/// Copy-assignment operator overloading.
 	template <typename T>
-	SNode<T>& SNode<T>::operator=(const SNode &obj)
+	SNode<T>& SNode<T>::operator=(const SNode &obj) const
 	{
-		content = obj.content;
-		next	= obj.next;
+		if (this != &obj)
+		{
+			(Node&)(*this) = obj;
+			next = obj.next;
+		}
 
 		return *this;
 	}
 
 	/// Get the pointer to the next node.
 	template <typename T>
-	SNode<T>* SNode<T>::getNext() { return next; }
+	SNode<T>* SNode<T>::getNext() const { return next; }
 
 	/// Set the pointer to the next node.
 	template <typename T>
 	SNode<T>* SNode<T>::setNext(SNode *nextNode) { return next = nextNode; }
 
-	/// Get the item (content) that this node contains.
-	template <typename T>
-	const T& SNode<T>::getContent() { return content; }
-
-	/// Set the item (content) that this node contains.
-	template <typename T>
-	const T& SNode<T>::setContent(const T& content) { return this->content = content; }
-
 	/// Allocate memory for a node (or take one node's address from freelist, if available), configure the new node, and return a pointer to it.
 	template <typename T>
 	SNode<T>* SNode<T>::get(const T &content, SNode *nextNode)
 	{
+		activeNodes++;
+
 		if (freelist == nullptr)
 			return new SNode(content, nextNode);
 
@@ -430,26 +530,136 @@ namespace ans
 	{
 		next		= freelist;
 		freelist	= this;
+		activeNodes--;
 	}
 
 	/// Move all nodes between this and tail (inclusive) to the freelist. Required in singlyLinkedList::clear() for getting O(1) performance.
 	template <typename T>
-	void SNode<T>::release(SNode* tail)
+	void SNode<T>::release(SNode* tail, size_t size)
 	{
 		tail->setNext(freelist);
 		freelist = this;
+		activeNodes -= size;
 	}
 
 	/// Delete (deallocate) all nodes in the freelist. Automatically called when nodesCount==0 (no nodes<T> in existence, which implies that it's called when no linked lists exist because each one has a header node).
 	template <typename T>
-	void SNode<T>::clearFreelist()
+	void SNode<T>::clearFreelist() const
 	{
 		delete freelist;
 		freelist = nullptr;
 	}
 
 
-	// ---------- singlyLinkedList ------------------------------
+	// ---------- DNode ------------------------------
+
+	/// Static list for storing removed nodes (already created nodes that aren't being used). Used to avoid calling "new" too much for creating new nodes.
+	template <typename T>
+	DNode<T>* DNode<T>::freelist = nullptr;
+
+	/// Number of DNode objects that aren't in the freelist. When it reaches 0, the content in freelist is deleted by calling clearFreelist().
+	template <typename T>
+	size_t DNode<T>::activeNodes = 0;
+
+	/// Constructor. Specify the item (content) and previous and next nodes.
+	template <typename T>
+	DNode<T>::DNode(const T& content, DNode* prevNode, DNode* nextNode) : Node(content), prev(prevNode), next(nextNode) { activeNodes++; }
+
+	/// Constructor. Specify previous and next nodes.
+	template <typename T>
+	DNode<T>::DNode(DNode* prevNode, DNode* nextNode) : prev(prevNode), next(nextNode) { activeNodes++; }
+
+	/// Copy constructor. Be careful: The pointers to previous and next node are copied (multiple pointers pointing to the same node may cause problems when such node is destroyed).
+	template <typename T>
+	DNode<T>::DNode(const DNode& obj) : Node(obj.content), prev(obj.prev), next(obj.next) { activeNodes++; }
+
+	/// Destructor. Destroys the next node (which causes the destruction of subsequent nodes).
+	template <typename T>
+	DNode<T>::~DNode()
+	{
+		--activeNodes;
+		if (activeNodes == 0)	clearFreelist();
+		if (prev != nullptr)	delete prev;		// <<< problem when removing a node or similar action??
+		if (next != nullptr)	delete next;
+	}
+
+	/// Copy-assignment operator overloading.
+	template <typename T>
+	DNode<T>& DNode<T>::operator=(const DNode& obj) const
+	{
+		if (this != &obj)
+		{
+			(Node&)(*this) = obj;
+			next = obj.next;
+		}
+
+		return *this;
+	}
+
+	/// Get the pointer to the previous node.
+	template <typename T>
+	DNode<T>* DNode<T>::getPrev() const { return prev; }
+
+	/// Set the pointer to the previous node.
+	template <typename T>
+	DNode<T>* DNode<T>::setPrev(DNode* prevNode) { return prev = prevNode; }
+
+	/// Get the pointer to the next node.
+	template <typename T>
+	DNode<T>* DNode<T>::getNext() const { return next; }
+
+	/// Set the pointer to the next node.
+	template <typename T>
+	DNode<T>* DNode<T>::setNext(DNode* nextNode) { return next = nextNode; }
+
+	/// Allocate memory for a node (or take one node's address from freelist, if available), configure the new node, and return a pointer to it.
+	template <typename T>
+	DNode<T>* DNode<T>::get(const T& content, DNode* prevNode, DNode* nextNode)
+	{
+		activeNodes++;
+
+		if (freelist == nullptr)
+			return new DNode(content, prevNode, nextNode);
+
+		DNode* newNode = freelist;
+		freelist = freelist->getNext();
+		newNode->setContent(content);
+		newNode->setPrev(prevNode);
+		newNode->setNext(nextNode);
+		return newNode;
+	}
+
+	/// Save this node in the freelist (head)
+	template <typename T>
+	void DNode<T>::release()
+	{
+		if(freelist != nullptr) freelist->prev = this;
+		next = freelist;
+		freelist = this;
+		activeNodes--;
+	}
+
+	/// Move all nodes between this and tail (inclusive) to the freelist. Required in singlyLinkedList::clear() for getting O(1) performance.
+	template <typename T>
+	void DNode<T>::release(DNode* tail, size_t size)
+	{
+		if (freelist != nullptr) freelist->prev = tail->next;
+		tail->setNext(freelist);
+		freelist = this;
+		activeNodes -= size;
+	}
+
+	/// Delete (deallocate) all nodes in the freelist. Automatically called when nodesCount==0 (no nodes<T> in existence, which implies that it's called when no linked lists exist because each one has a header node).
+	template <typename T>
+	void DNode<T>::clearFreelist() const
+	{
+		freelist->prev = nullptr;
+		delete freelist;
+		freelist = nullptr;
+	}
+
+
+	// ---------- SinglyLinkedList ------------------------------
 
 	/// O(1) Constructor. The parameter "size" is ignored.
 	template <typename T>
@@ -490,10 +700,13 @@ namespace ans
 	template <typename T>
 	SinglyLinkedList<T>& SinglyLinkedList<T>::operator=(const SinglyLinkedList& obj)
 	{
-		clear();
+		if (this != &obj)
+		{
+			clear();
 
-		for (SNode<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
-			append(pos->getNext()->getContent());
+			for (SNode<T>* pos = obj.head; pos->getNext() != nullptr; pos = pos->getNext())
+				append(pos->getNext()->getContent());
+		}
 
 		return *this;
 	}
@@ -521,10 +734,8 @@ namespace ans
 	void SinglyLinkedList<T>::clear()
 	{
 		//delete head->getNext();						// O(n) Delete all items in the linked list, except header node.
-
 		//moveToStart(); while(curr != tail) remove();	// O(n) Move all nodes to the freelist, except header node.
-
-		head->getNext()->release(tail);					// O(1) Move all nodes to the freelist, except header node.
+		head->getNext()->release(tail, count);			// O(1) Move all nodes to the freelist, except header node.
 
 		head->setNext(nullptr);
 		curr = tail = head;
@@ -615,11 +826,12 @@ namespace ans
 	template <typename T>
 	void SinglyLinkedList<T>::prev()
 	{
-		if (curr == head) return;
-
-		SNode<T> *temp = head;
-		while (temp->getNext() != curr) temp = temp->getNext();
-		curr = temp;
+		if (curr != head)
+		{
+			SNode<T>* temp = head;
+			while (temp->getNext() != curr) temp = temp->getNext();
+			curr = temp;
+		}
 	}
 
 	/// O(1) Move curr to the next node, if it exists (including one-past-the-end).
@@ -627,11 +839,184 @@ namespace ans
 	void SinglyLinkedList<T>::next() { if (curr != tail) curr = curr->getNext(); }
 	
 
-	// ---------- doubleLinkedList ------------------------------
+	// ---------- DoubleLinkedList ------------------------------
 
+	/// O(1) Constructor. The parameter "size" is ignored.
+	template <typename T>
+	DoubleLinkedList<T>::DoubleLinkedList(size_t size)
+	{
+		head = curr = new DNode<T>(nullptr, nullptr);
+		tail = new DNode<T>(head, nullptr);
+		head->setNext(tail);	/// <<< BUG
+		count = 0;
+	}
 
+	/// O(n) Constructor. It takes an initialization list.
+	template <typename T>
+	DoubleLinkedList<T>::DoubleLinkedList(const std::initializer_list<T>& il)
+	{
+		head = curr = new DNode<T>(nullptr, nullptr);
+		tail = new DNode<T>(head, nullptr);
+		head->setNext(tail);
+		count = 0;
 
+		const T* item = il.begin();
+		for (size_t i = 0; i < il.size(); i++)
+			append(item[i]);
+	}
 
+	/// O(n) Copy constructor.
+	template <typename T>
+	DoubleLinkedList<T>::DoubleLinkedList(const DoubleLinkedList& obj)
+	{
+		head = curr = new DNode<T>(nullptr, nullptr);
+		tail = new DNode<T>(head, nullptr);
+		head->setNext(tail);
+		count = 0;
+
+		for (DNode<T>* pos = obj.head; pos->getNext() != tail; pos = pos->getNext())
+			append(pos->getNext()->getContent());
+	}
+
+	/// O(n) Destructor. Delete all nodes in the list, including header node.
+	template <typename T>
+	DoubleLinkedList<T>::~DoubleLinkedList() { delete head; }
+
+	/// O(n) Copy-assignment operator overloading.
+	template <typename T>
+	DoubleLinkedList<T>& DoubleLinkedList<T>::operator=(const DoubleLinkedList& obj)
+	{
+		if (this != &obj)
+		{
+			clear();
+
+			for (DNode<T>* pos = obj.head; pos->getNext() != tail; pos = pos->getNext())
+				append(pos->getNext()->getContent());
+		}
+
+		return *this;
+	}
+
+	/// O(n) Subscript operator overloading. It returns "const T&" instead of "T&" because node<T>::getContent() returns "const T&". The current node is not changed.
+	template <typename T>
+	const T& DoubleLinkedList<T>::operator[](size_t i) const
+	{
+		if (i >= count)
+			throw std::out_of_range("No current element");
+
+		DNode<T>* nod = head;
+		size_t pos = 0;
+		while (pos != i)
+		{
+			nod = nod->getNext();
+			pos++;
+		}
+
+		return nod->getNext()->getContent();
+	}
+
+	/// O(1) Move all nodes in the list to the freelist, except header node.
+	template <typename T>
+	void DoubleLinkedList<T>::clear()
+	{
+		//delete head->getNext();	this->DoubleLinkedList();			// O(n) Delete all items in the linked list, except header node.
+		//moveToStart(); while(curr->getNext() != tail) remove();	// O(n) Move all nodes to the freelist, except header node.
+		head->getNext()->release(tail->getPrev(), count);			// O(1) Move all nodes to the freelist, except header node.
+
+		head->setNext(tail);
+		tail->setPrev(head);
+		curr = head;
+		count = 0;
+	}
+
+	/// O(1) Store a new node in the list at the current position.
+	template <typename T>
+	void DoubleLinkedList<T>::insert(const T& content)
+	{
+		curr->setNext(DNode<T>::get(content, curr, curr->getNext()));	// New node inserted after curr (to insert in the head, we use header node)
+		curr->getNext()->getNext()->setPrev(curr->getNext());
+		count++;
+	}
+
+	/// O(1) Store a new node at the end of the list (tail).
+	template <typename T>
+	void DoubleLinkedList<T>::append(const T& content)
+	{
+		tail->setPrev(DNode<T>::get(content, tail->getPrev(), tail));
+		tail->getPrev()->getPrev()->setNext(tail->getPrev());
+		count++;
+	}
+
+	/// O(1) Remove the current node from the list and save it in the freelist.
+	template <typename T>
+	const T DoubleLinkedList<T>::remove()
+	{
+		if(curr->getNext() == tail || curr->getNext() == tail->getPrev()) throw std::out_of_range("No current element");
+
+		T removedItem = curr->getNext()->getContent();
+		DNode<T>* removedNode = curr->getNext();
+
+		curr->getNext()->getNext()->setPrev(curr);
+		curr->setNext(curr->getNext()->getNext());
+		removedNode->release();
+		count--;
+		return removedItem;
+	}
+
+	/// O(1) Get the number of nodes in the list.
+	template <typename T>
+	size_t DoubleLinkedList<T>::length() const { return count; }
+
+	/// O(n) Get the position number of the current node.
+	template <typename T>
+	size_t DoubleLinkedList<T>::currPos() const
+	{
+		DNode<T>* temp = head;
+		size_t i;
+
+		for (i = 0; curr != temp; i++)
+			temp = temp->getNext();
+
+		return i;
+	}
+
+	/// O(1) Get the item stored in the current node.
+	template <typename T>
+	const T& DoubleLinkedList<T>::getValue() const
+	{
+		if (curr == tail || curr == tail->getPrev())
+			throw std::out_of_range("No current element");
+
+		return curr->getNext()->getContent();
+	}
+
+	/// O(1) Move curr to the header node.
+	template <typename T>
+	void DoubleLinkedList<T>::moveToStart() { curr = head; }
+
+	/// O(1) Move curr to the tail (node one-past-the-end).
+	template <typename T>
+	void DoubleLinkedList<T>::moveToEnd() { curr = tail; }
+
+	/// O(n) Move curr to any position from 0 to one-past-the-end.
+	template <typename T>
+	void DoubleLinkedList<T>::moveToPos(size_t pos)
+	{
+		if (pos > count)
+			throw std::out_of_range("No current element");
+
+		curr = head;
+		for (size_t i = 0; i < pos; i++)
+			curr = curr->getNext();
+	}
+
+	/// O(n) Move curr to the previous node, except when curr==head.
+	template <typename T>
+	void DoubleLinkedList<T>::prev() { if (curr != head) curr = curr->getPrev(); }
+
+	/// O(1) Move curr to the next node, if it exists (including one-past-the-end).
+	template <typename T>
+	void DoubleLinkedList<T>::next() { if (curr != tail) curr = curr->getNext(); }
 
 }
 
