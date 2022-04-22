@@ -1,5 +1,5 @@
-#ifndef HEADER_HPP
-#define HEADER_HPP
+#ifndef LISTS_HPP
+#define LISTS_HPP
 
 /*
 	Classes:

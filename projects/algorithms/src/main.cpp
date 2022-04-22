@@ -1,6 +1,8 @@
 
 #include <iostream>
-#include "header.hpp"
+#include <algorithm>
+#include "lists.hpp"
+#include "trees.hpp"
 
 using namespace ans;
 
@@ -10,6 +12,11 @@ bool test_DoubleLinkedList();
 
 int main()
 {
+	std::string test = "asdflvph";
+	std::sort(test.begin(), test.end());
+	test.insert(test.begin()+2, 'A');
+	test.erase(test.begin() + 2);
+
 	test_arrayBasedList();
 	test_singlyLinkedList();
 	test_DoubleLinkedList();
