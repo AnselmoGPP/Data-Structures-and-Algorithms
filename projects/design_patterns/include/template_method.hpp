@@ -1,0 +1,6 @@
+#ifndef TEMPLATE_METHOD_HPP
+#define TEMPLATE_METHOD_HPP
+
+
+
+#endif

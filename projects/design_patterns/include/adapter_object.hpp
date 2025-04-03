@@ -1,0 +1,6 @@
+#ifndef ADAPTER_OBJECT_HPP
+#define ADAPTER_OBJECT_HPP
+
+
+
+#endif
