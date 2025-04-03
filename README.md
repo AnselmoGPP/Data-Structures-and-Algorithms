@@ -5,7 +5,13 @@
 Here you can find implementations of different data structures, algorithms, and design patterns:
 
 - **Data structures:**
-  - Lists, Stacks, Queues
+  - Lists
+    - Static array
+    - Dynamic array
+    - Singly linked list
+    - Double linked list
+    - Stack
+    - Queue
   - Binary trees
   - Non-binary trees
   - Internal sorting

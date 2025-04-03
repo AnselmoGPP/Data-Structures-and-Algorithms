@@ -21,9 +21,9 @@ ADD_DEFINITIONS(
 
 ADD_EXECUTABLE(${PROJECT_NAME}
 	src/main.cpp
-	src/data_structures.cpp
+	src/lists.cpp
 
-	include/data_structures.hpp
+	include/lists.hpp
 
 	../../more/TODO.txt
 	CMakeLists.txt

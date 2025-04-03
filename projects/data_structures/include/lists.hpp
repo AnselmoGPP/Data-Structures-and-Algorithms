@@ -1,8 +1,6 @@
 #ifndef LISTS_HPP
 #define LISTS_HPP
 
-// Running time complexity of each method is specified next to the method. If it's O(1), it's not specified.
-
 #include <initializer_list>
 #include <stdexcept>
 
