@@ -2,7 +2,7 @@
 
 <br>![example image](https://raw.githubusercontent.com/AnselmoGPP/Algorithms/master/more/algo.png)
 
-Here you can find implementations of different algorithms, data structures, and design patterns:
+Here you can find implementations of different data structures, algorithms, and design patterns:
 
 - **Data structures:**
   - Lists, Stacks, Queues
@@ -49,7 +49,7 @@ Here you can find implementations of different algorithms, data structures, and 
     - Visitor
     - Null object
 
-Running time complexity is denoted with O-notation (i.e., upper bound) for the worst case.
+Running time complexity of each method is specified in-code next to the method using O-notation (i.e., upper bound) for the worst case. If it's O(1), it's not specified.
 
 <h3>Links:</h3>
 
