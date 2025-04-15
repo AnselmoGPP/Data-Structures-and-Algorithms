@@ -57,6 +57,8 @@ Here you can find implementations of different data structures, algorithms, and 
 
 Running time complexity of each method is specified in-code next to the method using O-notation (i.e., upper bound) for the worst case. If it's O(1), it's not specified.
 
+The code is under the namespace `dsa` (for Data Structures and Algorithms).
+
 <h3>Links:</h3>
 
 - [**Data structures & Algorithm analysis**](https://people.cs.vt.edu/shaffer/Book/JAVA3e20130328.pdf)
