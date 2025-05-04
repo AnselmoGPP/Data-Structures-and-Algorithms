@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT( data_structures
 	 VERSION 1.0
-	 DESCRIPTION "Project sample"
+	 DESCRIPTION "Data_structures"
 	 LANGUAGES CXX
 )
 

@@ -6,12 +6,23 @@ Here you can find implementations of different data structures, algorithms, and 
 
 - **Data structures:**
   - Lists
-    - Static array
-    - Dynamic array
-    - Singly linked list
-    - Double linked list
+    - Array
+      - Static array
+      - Dynamic array
+    - Linked list (with freelist)
+      - Singly linked list
+      - Double linked list
+      - XOR linked list
     - Stack
+      - Static array stack
+      - (x) Double static array stack
+      - (x) Dynamic array stack
+      - Linked stack
     - Queue
+      - Static array queue
+      - (x) Dynamic array queue
+      - Linked queue
+    - Dictionary
   - Binary trees
   - Non-binary trees
   - Internal sorting
@@ -55,7 +66,10 @@ Here you can find implementations of different data structures, algorithms, and 
     - Visitor
     - Null object
 
-Running time complexity of each method is specified in-code next to the method using O-notation (i.e., upper bound) for the worst case. If it's O(1), it's not specified.
+Running time complexity of each method is specified in-code next to the method using O-notation (i.e., upper bound) for the worst case. If it's O(1), it's not specified. Complexity methods used:
+
+- Asymptotic analysis: For most algorithms.
+- Amortized analysis technique: For Dynamic array.
 
 The code is under the namespace `dsa` (for Data Structures and Algorithms).
 

@@ -5,8 +5,7 @@
 #include "lists.hpp"
 
 using namespace dsa;
-// <<< Operator new and delete for S/D/X linked lists
-// <<< Inheritance possible for linked lists?
+
 int main()
 {
 	try
@@ -14,11 +13,15 @@ int main()
 		std::cout << "Tests: Data structures" << std::endl;
 
 		std::cout << "  - Sequences" << std::endl;
-		test_StaticArray();
-		test_DynamicArray();
-		test_SinglyLinkedList();
-		test_DoubleLinkedList();
-		test_XorLinkedList();
+		test_List<StaticArray>();
+		test_List<DynamicArray>();
+		test_List<SinglyLinkedList>();
+		test_List<DoubleLinkedList>();
+		test_List<XorLinkedList>();
+		test_Stack<SArrayStack>();
+		test_Stack<LinkedStack>();
+		test_Queue<SArrayQueue>();
+		test_Queue<LinkedQueue>();
 
 		std::cout << "  - Binary trees" << std::endl;
 		std::cout << "  - Non-binary trees" << std::endl;

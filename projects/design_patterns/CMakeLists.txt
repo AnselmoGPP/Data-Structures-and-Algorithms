@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT( design_patterns
 	 VERSION 1.0
-	 DESCRIPTION "Project sample"
+	 DESCRIPTION "Design_patterns"
 	 LANGUAGES CXX
 )
 

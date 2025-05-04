@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.12)
 
 PROJECT( algorithms
 	 VERSION 1.0
-	 DESCRIPTION "Project sample"
+	 DESCRIPTION "Algorithms"
 	 LANGUAGES CXX
 )
 
@@ -21,13 +21,10 @@ ADD_DEFINITIONS(
 
 ADD_EXECUTABLE(${PROJECT_NAME}
 	src/main.cpp
-	src/lists.cpp
-	src/trees.cpp
+	src/recursion.cpp
 
-	include/lists.hpp
-	include/trees.hpp
+	include/recursion.hpp
 
-	../../more/TODO.txt
 	CMakeLists.txt
 )
 
