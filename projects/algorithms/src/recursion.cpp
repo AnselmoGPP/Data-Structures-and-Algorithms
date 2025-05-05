@@ -28,8 +28,6 @@ long fact_recursive(unsigned n)
 
 long fact_stack(unsigned n, LinkedStack<unsigned>& stack)
 {
-    if (n < 0 || n > 12) throw std::out_of_range("Input out of range");
-
     while (n > 1) stack.push(n--);
     long result = 1;
     while (stack.length() > 0) result *= stack.pop();
@@ -77,58 +75,31 @@ void TOH_recursive(unsigned n, Pole& start, Pole& goal, Pole& temp)
     TOH_recursive(n - 1, temp, goal, start);   // 2. Move n-1 disks from temp to goal
 }
 
-TOHobj::TOHobj(unsigned n, Pole start, Pole goal, Pole temp)
-    : op(DOTOH), num(n), start(start), goal(goal), tmp(temp) { }
+TOHobj::TOHobj(unsigned n, Pole& start, Pole& goal, Pole& temp)
+    : operation(DOTOH), count(n), start(start), goal(goal), temp(temp) { }
 
-TOHobj::TOHobj(Pole start, Pole goal)
-    : op(DOMOVE), start(start), goal(goal) { }
+TOHobj::TOHobj(Pole& start, Pole& goal)
+    : operation(DOMOVE), count(), start(start), goal(goal), temp(goal) { }
 
-void TOH_stack(unsigned n, Pole& start, Pole& goal, Pole& temp, LinkedStack<TOHobj*>& S)
+void TOH_stack(unsigned n, Pole& start, Pole& goal, Pole& temp, LinkedStack<TOHobj*>& stack)
 {
-    S.push(new TOHobj(n, start, goal, temp));
-    TOHobj* t;
-    while (S.length() > 0)   // Grab next task
+    stack.push(new TOHobj(n, start, goal, temp));
+    TOHobj* toh;
+
+    while (stack.length() > 0)   // Grab next task
     {
-        t = S.pop();
-        if (t->op == DOMOVE)   // Do a move
-            t->start.move(t->goal);
-        else if (t->num > 0)   // Store in reverse 3 recursive statements
+        toh = stack.pop();
+        if (toh->operation == DOMOVE)   // Do a move
+            toh->start.move(toh->goal);
+        else if (toh->count > 0)   // Store in reverse 3 recursive statements
         {
-            int num = t->num;
-            Pole tmp = t->tmp;
-            Pole goal = t->goal;
-            Pole start = t->start;
-            S.push(new TOHobj(num - 1, tmp, goal, start));
-            S.push(new TOHobj(start, goal));
-            S.push(new TOHobj(num - 1, start, tmp, goal));
+            stack.push(new TOHobj(toh->count - 1, toh->temp, toh->goal, toh->start));
+            stack.push(new TOHobj(toh->start, toh->goal));
+            stack.push(new TOHobj(toh->count - 1, toh->start, toh->temp, toh->goal));
         }
-        delete t;
+        delete toh;
     }
 }
-/*
-void TOH_stack(unsigned n, Pole& start, Pole& goal, Pole& temp, LinkedStack<TOHobj*>& S)
-{
-    S.push(new TOHobj(n, start, goal, temp));
-    TOHobj* t;
-    while (S.length() > 0)   // Grab next task
-    {
-        t = S.pop();
-        if (t->op == DOMOVE)   // Do a move
-            t->start.move(t->goal);
-        else if (t->num > 0)   // Store in reverse 3 recursive statements
-        {
-            int num = t->num;
-            Pole tmp = t->tmp;
-            Pole goal = t->goal;
-            Pole start = t->start;
-            S.push(new TOHobj(num - 1, tmp, goal, start));
-            S.push(new TOHobj(start, goal));
-            S.push(new TOHobj(num - 1, start, tmp, goal));
-        }
-        delete t;
-    }
-}
-*/
 
 // -- Tests --------------------------------------
 
@@ -185,7 +156,6 @@ void test_TOH()
     Pole start4(10), goal4, temp4;
     LinkedStack<TOHobj*> stack4;
     TOH_stack(10, start4, goal4, temp4, stack4);
-    std::cout << start4.length() << "-" << temp4.length() << "-" << goal4.length() << std::endl;
     verifyTOH(10, start4, temp4, goal4);
 
     std::cout << std::endl;

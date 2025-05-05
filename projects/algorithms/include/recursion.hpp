@@ -12,20 +12,20 @@ using namespace dsa;
    - Iteration: A set of instructions is repeatedly executed using a loop until a certain condition is met.
 */
 
-long fact_iteration(unsigned n);   //!< Factorial algorithm solved using iteration.
-long fact_recursive(unsigned n);   //!< Factorial algorithm solved using recursion.
-long fact_stack(unsigned n, LinkedStack<unsigned>& stack);   //!< Factorial algorithm solved using a stack.
+long fact_iteration(unsigned n);   //!< O(n). Factorial algorithm solved using iteration.
+long fact_recursive(unsigned n);   //!< O(n). Factorial algorithm solved using recursion.
+long fact_stack(unsigned n, LinkedStack<unsigned>& stack);   //!< O(n). Factorial algorithm solved using a stack.
 
 class Pole;
 class TOHobj;
-void TOH_recursive(unsigned n, Pole& start, Pole& goal, Pole& temp);   //!< Towers of Hanoi algorithm solved using recursion.
-void TOH_stack(unsigned n, Pole& start, Pole& goal, Pole& temp, LinkedStack<TOHobj*>& S);   //!< Towers of Hanoi algorithm solved using a stack.
+void TOH_recursive(unsigned n, Pole& start, Pole& goal, Pole& temp);   //!< O(?). Towers of Hanoi algorithm solved using recursion.
+void TOH_stack(unsigned n, Pole& start, Pole& goal, Pole& temp, LinkedStack<TOHobj*>& stack);   //!< O(?). Towers of Hanoi algorithm solved using a stack.
 
 void test_fact();   //!< Test for factorial algorithm.
 void test_TOH();   //!< Test for TOH algorithm.
 void verifyTOH(size_t n, Pole& start, Pole& temp, Pole& goal);   //!< Verify goal contains n sorted plates, and start and temp are empty.
 
-/// Pole class.
+/// Pole class. Adapted LinkedStack<unsigned> object.
 class Pole : protected LinkedStack<unsigned>
 {
 public:
@@ -42,16 +42,16 @@ public:
 /// Operations.
 enum TOHop { DOMOVE, DOTOH };
 
-/// Operation object.
+/// Representation of a TOH game set and an operation to perform in it.
 class TOHobj
 {
 public:
-    TOHobj(unsigned n, Pole start, Pole goal, Pole temp);
-    TOHobj(Pole start, Pole goal);
+    TOHobj(unsigned n, Pole& start, Pole& goal, Pole& temp);
+    TOHobj(Pole& start, Pole& goal);
 
-    TOHop op;   // operation type
-    unsigned num;   // disks count
-    Pole start, goal, tmp;
+    TOHop operation;   // operation type
+    unsigned count;   // disks count
+    Pole &start, &goal, &temp;
 };
 
 #endif
