@@ -4,7 +4,7 @@
 
 #include "lists.hpp"
 
-using namespace dsa;
+using namespace dss;
 
 int main()
 {
@@ -18,10 +18,12 @@ int main()
 		test_List<SinglyLinkedList>();
 		test_List<DoubleLinkedList>();
 		test_List<XorLinkedList>();
+		//test_SortedList<SortedStaticArray>();
 		test_Stack<SArrayStack>();
 		test_Stack<LinkedStack>();
 		test_Queue<SArrayQueue>();
 		test_Queue<LinkedQueue>();
+		test_Dictionary<StaticArrayDictionary>();
 
 		std::cout << "  - Binary trees" << std::endl;
 		std::cout << "  - Non-binary trees" << std::endl;

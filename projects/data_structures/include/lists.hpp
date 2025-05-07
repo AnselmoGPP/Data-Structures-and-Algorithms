@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace dsa
+namespace dss   // Data Structures namespace
 {
 	// Main declarations ----------------------------------------
 
@@ -39,9 +39,10 @@ namespace dsa
 	void swap(T& a, T& b);
 
 	template<template<typename> class T> void test_List();
+	template<template<typename, typename> class T> void test_SortedList();
 	template<template<typename> class T> void test_Stack();
 	template<template<typename> class T> void test_Queue();
-	template<template<typename> class T> void test_Dictionary();
+	template<template<typename, typename> class T> void test_Dictionary();
 
 	template<typename T> using SA = StaticArray<T>;
 	template<typename T> using DA = DynamicArray<T>;
@@ -471,6 +472,7 @@ namespace dsa
 		virtual size_t length() const;
 	};
 	
+	// <<< should k be passed as reference?
 	/// Abstract class: Dictionary
 	template <typename K, typename E>
 	class Dictionary
@@ -481,33 +483,29 @@ namespace dsa
 		virtual ~Dictionary() { }
 
 		//virtual List& operator=(const List& obj) = 0;   // Copy-assignment (cannot be virtual)
-		virtual E& operator[](size_t i) const = 0;   // Subscript
+		virtual E& operator[](K k) const = 0;   // Subscript
 
 		virtual void clear() = 0;
 		virtual void insert(const K& k, const E& e) = 0;
 		virtual E remove(const K& k) = 0;
 		virtual E removeAny() = 0;
-		virtual E find(const K& k) const = 0;
-		virtual int size() = 0;
+		virtual const E* find(const K& k) const = 0;
+		virtual int length() = 0;
 	};
 
 	/// Key-value pair container.
 	template <typename K, typename E>
 	class KVpair
 	{
-	private:
-		K k;
-		E e;
 	public:
 		KVpair();
-		KVpair(K kval, E eval);
-		KVpair(const KVpair& o);
+		KVpair(K key, E element);
+		KVpair(const KVpair& obj);
 
-		KVpair<K,E>& operator =(const KVpair& o);
+		KVpair<K,E>& operator=(const KVpair& obj);
 
-		void setKey(K key);
-		K key();
-		E value();
+		K key;
+		E element;
 	};
 
 	/// Unsorted array dictionary.
@@ -523,14 +521,14 @@ namespace dsa
 		~StaticArrayDictionary();
 
 		StaticArrayDictionary& operator=(const StaticArrayDictionary& obj);
-		E& operator[](size_t i) const override;
+		E& operator[](K k) const override;
 
 		void clear();
 		void insert(const K& k, const E& e);
 		E remove(const K& k);
 		E removeAny();
-		E find(const K& k) const;
-		int size();
+		const E* find(const K& k) const;
+		int length();
 	};
 
 	/// Sorted static array for key-value pairs. It inherits from protected StaticArray, so we can hide insert and append, redefine insert, and expose all remaining methods.
@@ -550,7 +548,7 @@ namespace dsa
 
 		StaticArray<KVpair<K,E>>::clear;
 		//StaticArray<KVpair<K,E>>::insert;   // Made inaccessible
-		//StaticArray<KVpair<K,E>>::append;   // Made unaccessible
+		//StaticArray<KVpair<K,E>>::append;   // Made inaccessible
 		StaticArray<KVpair<K,E>>::remove;
 
 		StaticArray<KVpair<K,E>>::length;
@@ -572,7 +570,7 @@ namespace dsa
 	};
 
 	/// Comparator class for integer keys.
-	class IntCompare
+	class IntCompare : public Comparator
 	{
 	public:
 		static bool lt(int x, int y) { return x <  y; }
@@ -581,7 +579,7 @@ namespace dsa
 	};
 
 	/// Compare character strings.
-	class CharStrCompare
+	class CharStrCompare : public Comparator
 	{
 	public:
 		static bool lt(char* x, char* y) { return strcmp(x, y) <  0; }
@@ -652,11 +650,11 @@ namespace dsa
 	StaticArray<T>& StaticArray<T>::operator=(const StaticArray& obj)
 	{
 		if (this == &obj) return *this;
-		
-		delete[] array;
 
-		copyFrom(obj);
+		if (array) delete[] array;
 		
+		copyFrom(obj);
+
 		return *this;
 	}
 
@@ -835,7 +833,7 @@ namespace dsa
 	{
 		if (this == &obj) return *this;
 
-		delete[] array;
+		if(array) delete[] array;
 
 		copyFrom(obj);
 
@@ -1976,13 +1974,8 @@ namespace dsa
 		top = nullptr;
 
 		std::vector<T*> elements;
-		SNode<T>* node = obj.top;
-
-		while (node)
-		{
+		for(SNode<T>* node = obj.top; node; node = node->next)
 			elements.push_back(&(node->element));
-			node = node->next;
-		}
 
 		for (auto it = elements.rbegin(); it != elements.rend(); ++it)
 			push(**it);
@@ -2159,12 +2152,8 @@ namespace dsa
 		size = 0;
 		front = rear = new SNode<T>;
 
-		SNode<T>* node = obj.front->next;
-		while (node)
-		{
+		for(SNode<T>* node = obj.front->next; node; node = node->next)
 			enqueue(node->element);
-			node = node->next;
-		}
 	}
 
 	/// Reinitialize the queue.
@@ -2226,36 +2215,24 @@ namespace dsa
 	/// Constructor.
 	template<typename K, typename E>
 	KVpair<K,E>::KVpair(K key, E element)
-		: k(key), e(element) { }
+		: key(key), element(element) { }
 
 	/// Copy constructor.
 	template<typename K, typename E>
-	KVpair<K,E>::KVpair(const KVpair& o)
-		: k(o.k), e(o.e) { }
+	KVpair<K,E>::KVpair(const KVpair& obj)
+		: key(obj.key), element(obj.element) { }
 	
 	/// Copy-assignment operator overloading.
 	template<typename K, typename E>
-	KVpair<K, E>& KVpair<K,E>::operator =(const KVpair& o)
+	KVpair<K, E>& KVpair<K,E>::operator=(const KVpair& obj)
 	{
 		if (this == &obj) return *this;
 
-		k = o.k;
-		e = o.e;
+		key = obj.key;
+		element = obj.element;
 
 		return *this;
 	}
-
-	/// Set key value.
-	template<typename K, typename E>
-	void KVpair<K,E>::setKey(K key) { k = key; }
-
-	/// Get key value.
-	template<typename K, typename E>
-	K KVpair<K,E>::key() { return k; }
-
-	/// Get element value.
-	template<typename K, typename E>
-	E KVpair<K,E>::value() { return e; }
 
 
 	// -- StaticArrayDictionary --------------------------------------
@@ -2267,7 +2244,8 @@ namespace dsa
 
 	/// Copy-constructor.
 	template <typename K, typename E>
-	StaticArrayDictionary<K,E>::StaticArrayDictionary(const StaticArrayDictionary& obj) { list = obj.list; }
+	StaticArrayDictionary<K,E>::StaticArrayDictionary(const StaticArrayDictionary& obj)
+		: list(new StaticArray<KVpair<K, E>>(*obj.list)) { }
 
 	/// Destructor.
 	template <typename K, typename E>
@@ -2281,23 +2259,21 @@ namespace dsa
 
 		if(list) delete list;
 
-		list = obj.list;
+		list = new StaticArray<KVpair<K, E>>(*obj.list);
 
 		return *this;
 	}
 
 	/// Subscript operator overloading.
 	template <typename K, typename E>
-	E& StaticArrayDictionary<K, E>::operator [](size_t i) const
+	E& StaticArrayDictionary<K, E>::operator [](K k) const
 	{
-		if(i >= list->length()) throw std::out_of_range("No current element");
+		if(!find(k)) throw std::out_of_range("No current element");
 
-		size_t count = 0;
 		for (list->moveToStart(); list->currPos() < list->length(); list->next())
 		{
-			if (i == count)
-				return list->getValue();
-			count++;
+			if (k == list->getValue().key)
+				return (*list)[list->currPos()].element;
 		}
 	}
 
@@ -2309,16 +2285,23 @@ namespace dsa
 	template <typename K, typename E>
 	void StaticArrayDictionary<K, E>::insert(const K& k, const E& e)
 	{
-		KVpair<K, E> temp(k, e);
-		list->append(temp);
+		if (find(k))
+			(*this)[k] = e;
+		else
+		{
+			KVpair<K, E> temp(k, e);
+			list->append(temp);
+		}
 	}
 
 	// Find the element to remove using sequential search.
 	template <typename K, typename E>
 	E StaticArrayDictionary<K, E>::remove(const K& k)
 	{
-		E temp = find(k);
-		if (temp != NULL) list->remove();
+		const E* ptr = find(k);
+		if (!ptr) throw std::out_of_range("Non-existent element");
+		E temp = *ptr;
+		list->remove();
 		return temp;
 	}
 
@@ -2326,31 +2309,32 @@ namespace dsa
 	template <typename K, typename E>
 	E StaticArrayDictionary<K, E>::removeAny()
 	{
-		if(size() == 0) std::out_of_range("Dictionary is empty");
+		if(!length()) throw std::out_of_range("Dictionary is empty");
 
 		list->moveToEnd();
 		list->prev();
-		KVpair<Key, E> e = list->remove();
-		return e.value();
+		return list->remove().element;
 	}
 
 	/// Find an element using sequential search.
 	template <typename K, typename E>
-	E StaticArrayDictionary<K, E>::find(const K& k) const
+	const E* StaticArrayDictionary<K, E>::find(const K& k) const
 	{
+		const KVpair<K, E>* temp;
+
 		for (list->moveToStart(); list->currPos() < list->length(); list->next())
 		{
-			KVpair<Key, E> temp = list->getValue();
-			if (k == temp.key())
-				return temp.value();
+			temp = &list->getValue();
+			if (k == temp->key)
+				return &temp->element;
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	/// Return list size.
 	template <typename K, typename E>
-	int StaticArrayDictionary<K, E>::size() { return list->length(); }
+	int StaticArrayDictionary<K, E>::length() { return list->length(); }
 
 
 	// -- SortedStaticArray --------------------------------------
@@ -2369,10 +2353,16 @@ namespace dsa
 	SortedStaticArray<K,E>::~SortedStaticArray() { };
 
 	template <typename K, typename E>
-	SortedStaticArray<K,E>& SortedStaticArray<K,E>::operator=(const SortedStaticArray& obj) { };
+	SortedStaticArray<K,E>& SortedStaticArray<K,E>::operator=(const SortedStaticArray& obj)
+	{
+	
+	};
 
 	template <typename K, typename E>
-	E& SortedStaticArray<K,E>::operator[](size_t i) const { };
+	E& SortedStaticArray<K,E>::operator[](size_t i) const
+	{
+	
+	};
 
 	template <typename K, typename E>
 	void SortedStaticArray<K,E>::insert(KVpair<K,E>& it)
@@ -2519,7 +2509,7 @@ namespace dsa
 		if (list2.currPos() != 2) throw std::exception("Failed at currPos()");
 		if (list2.getValue() != 2) throw std::exception("Failed at getValue()");
 		if (list2[7] != 7) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list2, 5) != 5) throw std::exception("Failed at find()");
+		if (dss::find(&list2, 5) != 5) throw std::exception("Failed at find()");
 
 		std::cout << ++testNumber << " " << std::flush;   // 3
 		T<int> list3({ 0,1,2,3,4,5,6,7,8,9 });
@@ -2528,7 +2518,7 @@ namespace dsa
 		if (list3.currPos() != 3) throw std::exception("Failed at currPos()");
 		if (list3.getValue() != 3) throw std::exception("Failed at getValue()");
 		if (list3[6] != 6) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list3, 9) != 9) throw std::exception("Failed at find()");
+		if (dss::find(&list3, 9) != 9) throw std::exception("Failed at find()");
 		list3.moveToPos(3);
 
 		std::cout << ++testNumber << " " << std::flush;   // 4
@@ -2537,7 +2527,7 @@ namespace dsa
 		if (list4.currPos() != 3) throw std::exception("Failed at currPos()");
 		if (list4.getValue() != 3) throw std::exception("Failed at getValue()");
 		if (list4[6] != 6) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list4, 9) != 9) throw std::exception("Failed at find()");
+		if (dss::find(&list4, 9) != 9) throw std::exception("Failed at find()");
 		list4.moveToPos(3);
 
 		std::cout << ++testNumber << " " << std::flush;   // 5
@@ -2546,7 +2536,7 @@ namespace dsa
 		if (list5.currPos() != 3) throw std::exception("Failed at currPos()");
 		if (list5.getValue() != 3) throw std::exception("Failed at getValue()");
 		if (list5[6] != 6) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list5, 9) != 9) throw std::exception("Failed at find()");
+		if (dss::find(&list5, 9) != 9) throw std::exception("Failed at find()");
 
 		std::cout << ++testNumber << " " << std::flush;   // 6
 		T<int> list6 = list5;
@@ -2573,7 +2563,7 @@ namespace dsa
 		if (list7.currPos() != 0) throw std::exception("Failed at currPos()");
 		if (list7.getValue() != 0) throw std::exception("Failed at getValue()");
 		if (list7[7] != 7) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list7, 5) != 5) throw std::exception("Failed at find()");
+		if (dss::find(&list7, 5) != 5) throw std::exception("Failed at find()");
 		list7.moveToPos(0);
 
 		std::cout << ++testNumber << " " << std::flush;   // 8
@@ -2583,7 +2573,144 @@ namespace dsa
 		if (list2.currPos() != 0) throw std::exception("Failed at currPos()");
 		if (list2.getValue() != 0) throw std::exception("Failed at getValue()");
 		if (list2[7] != 7) throw std::exception("Failed at operator[]");
-		if (dsa::find(&list7, 5) != 5) throw std::exception("Failed at find()");
+		if (dss::find(&list7, 5) != 5) throw std::exception("Failed at find()");
+
+		std::cout << std::endl;
+	}
+
+	/// Tests for sorted lists.
+	template<template<typename, typename> class T>
+	void test_SortedList()
+	{
+		// <<< std::pair
+		/*
+		SortedStaticArray(size_t capacity = 1);
+		SortedStaticArray(const std::initializer_list<KVpair<K, E>>&il);
+		SortedStaticArray(const SortedStaticArray & obj);
+		~SortedStaticArray() override;
+
+		SortedStaticArray& operator=(const SortedStaticArray & obj);
+		E& operator[](size_t i) const override;
+
+		void insert(KVpair<K, E>&it);   // Redefined
+
+		StaticArray<KVpair<K, E>>::clear;
+		//StaticArray<KVpair<K,E>>::insert;   // Made inaccessible
+		//StaticArray<KVpair<K,E>>::append;   // Made inaccessible
+		StaticArray<KVpair<K, E>>::remove;
+
+		StaticArray<KVpair<K, E>>::length;
+		StaticArray<KVpair<K, E>>::currPos;
+		StaticArray<KVpair<K, E>>::getValue;
+
+		StaticArray<KVpair<K, E>>::moveToStart;
+		StaticArray<KVpair<K, E>>::moveToEnd;
+		StaticArray<KVpair<K, E>>::moveToPos;
+		StaticArray<KVpair<K, E>>::prev;
+		StaticArray<KVpair<K, E>>::next;
+		*/
+
+
+
+		size_t testNumber = 0;
+		std::cout << typeid(T).name() << ": " << std::flush;
+
+		std::cout << ++testNumber << " " << std::flush;   // 1
+		T<int> list1(0);
+		list1.clear();
+		list1.moveToEnd();
+		if (list1.length() != 0) throw std::exception("Failed at length()");
+		if (list1.currPos() != 0) throw std::exception("Failed at currPos()");
+
+		std::cout << ++testNumber << " " << std::flush;   // 2
+		T<int> list2(10);
+		list2.append(0);
+		list2.append(1);
+		list2.append(3);
+		list2.append(4);
+		list2.moveToEnd();
+		list2.prev();
+		list2.prev();
+		list2.insert(2);
+		list2.insert(3);
+		list2.append(5);
+		list2.append(6);
+		list2.append(8);
+		list2.moveToPos(8);
+		list2.insert(7);
+		list2.moveToStart();
+		list2.next();
+		list2.next();
+		list2.remove();
+		if (list2.length() != 9) throw std::exception("Failed at length()");
+		if (list2.currPos() != 2) throw std::exception("Failed at currPos()");
+		if (list2.getValue() != 2) throw std::exception("Failed at getValue()");
+		if (list2[7] != 7) throw std::exception("Failed at operator[]");
+		if (dss::find(&list2, 5) != 5) throw std::exception("Failed at find()");
+
+		std::cout << ++testNumber << " " << std::flush;   // 3
+		T<int> list3({ 0,1,2,3,4,5,6,7,8,9 });
+		list3.moveToPos(3);
+		if (list3.length() != 10) throw std::exception("Failed at length()");
+		if (list3.currPos() != 3) throw std::exception("Failed at currPos()");
+		if (list3.getValue() != 3) throw std::exception("Failed at getValue()");
+		if (list3[6] != 6) throw std::exception("Failed at operator[]");
+		if (dss::find(&list3, 9) != 9) throw std::exception("Failed at find()");
+		list3.moveToPos(3);
+
+		std::cout << ++testNumber << " " << std::flush;   // 4
+		T<int> list4(list3);
+		if (list4.length() != 10) throw std::exception("Failed at length()");
+		if (list4.currPos() != 3) throw std::exception("Failed at currPos()");
+		if (list4.getValue() != 3) throw std::exception("Failed at getValue()");
+		if (list4[6] != 6) throw std::exception("Failed at operator[]");
+		if (dss::find(&list4, 9) != 9) throw std::exception("Failed at find()");
+		list4.moveToPos(3);
+
+		std::cout << ++testNumber << " " << std::flush;   // 5
+		T<int> list5 = list4;
+		if (list5.length() != 10) throw std::exception("Failed at length()");
+		if (list5.currPos() != 3) throw std::exception("Failed at currPos()");
+		if (list5.getValue() != 3) throw std::exception("Failed at getValue()");
+		if (list5[6] != 6) throw std::exception("Failed at operator[]");
+		if (dss::find(&list5, 9) != 9) throw std::exception("Failed at find()");
+
+		std::cout << ++testNumber << " " << std::flush;   // 6
+		T<int> list6 = list5;
+		list6.clear();
+		if (list6.length() != 0) throw std::exception("Failed at length()");
+		if (list6.currPos() != 0) throw std::exception("Failed at currPos()");
+
+		std::cout << ++testNumber << " " << std::flush;   // 7
+		T<int> list7(15);
+		list7.clear();
+		list7.moveToEnd();
+		list7.append(0);
+		list7.append(1);
+		list7.append(2);
+		list7.append(3);
+		list7.append(4);
+		list7.append(5);
+		list7.append(6);
+		list7.append(7);
+		list7.append(8);
+		list7.append(9);
+		list7.append(10);
+		if (list7.length() != 11) throw std::exception("Failed at length()");
+		if (list7.currPos() != 0) throw std::exception("Failed at currPos()");
+		if (list7.getValue() != 0) throw std::exception("Failed at getValue()");
+		if (list7[7] != 7) throw std::exception("Failed at operator[]");
+		if (dss::find(&list7, 5) != 5) throw std::exception("Failed at find()");
+		list7.moveToPos(0);
+
+		std::cout << ++testNumber << " " << std::flush;   // 8
+		list2 = list7;
+
+		if (list2.length() != 11) throw std::exception("Failed at length()");
+		if (list2.currPos() != 0) throw std::exception("Failed at currPos()");
+		if (list2.getValue() != 0) throw std::exception("Failed at getValue()");
+		if (list2[7] != 7) throw std::exception("Failed at operator[]");
+		if (dss::find(&list7, 5) != 5) throw std::exception("Failed at find()");
 
 		std::cout << std::endl;
 	}
@@ -2717,10 +2844,73 @@ namespace dsa
 	}
 
 	/// Tests for dictionaries.
-	template<template<typename> class T>
+	template<template<typename, typename> class T>
 	void test_Dictionary()
 	{
-		// <<<
+		size_t testNumber = 0;
+		std::cout << typeid(T).name() << ": " << std::flush;
+
+		std::cout << ++testNumber << " " << std::flush;   // 1
+		StaticArrayDictionary<int, std::string> dict1(0);
+		dict1.clear();
+		if (dict1.length() != 0) throw std::exception("Failed at length()");
+
+		std::cout << ++testNumber << " " << std::flush;   // 2
+		StaticArrayDictionary<int, std::string> dict2(10);
+		dict2.insert(1, "pos 1");
+		dict2.insert(2, "pos 2");
+		dict2.insert(3, "pos 3");
+		dict2.remove(2);
+		dict2.insert(4, "pos 4");
+		dict2.insert(5, "pos 5");
+		dict2.removeAny();
+		if (dict2.length() != 3) throw std::exception("Failed at length()");
+		if (*dict2.find(4) != "pos 4") throw std::exception("Failed at find()");
+		if (dict2[3] != "pos 3") throw std::exception("Failed at operator []");
+		
+		std::cout << ++testNumber << " " << std::flush;   // 3
+		StaticArrayDictionary<int, std::string> dict3(dict2);
+		dict3.insert(2, "pos 2");
+		dict3.insert(5, "pos 5");
+		dict3.insert(6, "pos 6");
+		dict3.remove(2);
+		dict3.insert(2, "pos 2 new");
+		dict3.insert(7, "pos 7");
+		dict3.removeAny();
+		if (dict3.length() != 6) throw std::exception("Failed at length()");
+		if (*dict3.find(2) != std::string("pos 2 new")) throw std::exception("Failed at find()");
+		if (*dict3.find(3) != std::string("pos 3")) throw std::exception("Failed at find()");
+		if (dict3[5] != "pos 5") throw std::exception("Failed at operator []");
+
+		std::cout << ++testNumber << " " << std::flush;   // 4
+		StaticArrayDictionary<int, std::string> dict4 = dict3;
+		dict4.insert(9, "pos 9");
+		dict4.insert(7, "pos 7");
+		dict4.insert(7, "pos 7 new");
+		dict4.remove(9);
+		dict4.insert(9, "pos 9 again");
+		dict4.insert(8, "pos 8");
+		dict4.removeAny();
+		if (dict4.length() != 8) throw std::exception("Failed at length()");
+		if (*dict4.find(7) != std::string("pos 7 new")) throw std::exception("Failed at find()");
+		if (*dict4.find(3) != std::string("pos 3")) throw std::exception("Failed at find()");
+		if (*dict4.find(9) != std::string("pos 9 again")) throw std::exception("Failed at find()");
+		if (dict4[5] != "pos 5") throw std::exception("Failed at operator []");
+
+		std::cout << ++testNumber << " " << std::flush;   // 5
+		dict3 = dict4;
+		if (dict3.length() != 8) throw std::exception("Failed at length()");
+		if (*dict3.find(7) != std::string("pos 7 new")) throw std::exception("Failed at find()");
+		if (*dict3.find(3) != std::string("pos 3")) throw std::exception("Failed at find()");
+		if (*dict3.find(9) != std::string("pos 9 again")) throw std::exception("Failed at find()");
+		if (dict3[5] != "pos 5") throw std::exception("Failed at operator []");
+
+		std::cout << ++testNumber << " " << std::flush;   // 6
+		StaticArrayDictionary<int, std::string> dict5 = dict4;
+		dict5.clear();
+		if (dict5.length() != 0) throw std::exception("Failed at length()");
+
+		std::cout << std::endl;
 	}
 }
 

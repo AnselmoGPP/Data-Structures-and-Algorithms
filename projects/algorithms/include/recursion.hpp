@@ -3,7 +3,7 @@
 
 #include "../../data_structures/include/lists.hpp"
 
-using namespace dsa;
+using namespace dss;
 
 /*
    Recursion can always be replaced with a stack, but not always with iteration (like in TOH).

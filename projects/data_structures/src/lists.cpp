@@ -1,6 +1,6 @@
 #include "lists.hpp"
 
-namespace dsa
+namespace dss
 {
 
 }
